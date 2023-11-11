@@ -23,12 +23,18 @@ import { Pool } from 'pg';
             user: databaseOptions.user,
             password: databaseOptions.password,
             database: databaseOptions.database,
-            ssl: true
+            ssl: true,
           }),
         });
 
         return new Database({
           dialect,
+          log(event) {
+            if (event.level === 'query') {
+              console.log(event.query.sql);
+              console.log(event.query.parameters);
+            }
+          },
         });
       },
     },
