@@ -5,5 +5,6 @@ export interface FolderTable {
   name: string;
   parent_id: number | null;
   size: number | 0;
+  path: string | null;
   created_at: ColumnType<Date, string | undefined, never>;
 }

@@ -6,5 +6,6 @@ export interface FileTable {
   data: string | null;
   size: number | 0;
   parent_id: number | null;
+  path: string | null;
   created_at: ColumnType<Date, string | undefined, never>;
 }

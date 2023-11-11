@@ -23,6 +23,7 @@ import { Pool } from 'pg';
             user: databaseOptions.user,
             password: databaseOptions.password,
             database: databaseOptions.database,
+            ssl: true
           }),
         });
 
