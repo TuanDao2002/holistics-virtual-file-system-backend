@@ -18,8 +18,4 @@ export class FileService {
     const { filePath: path, data } = fileDTO;
     return await this.fileRepository.createFile(path, data);
   }
-
-  public async removeFiles(paths: string[]): Promise<void> {
-    return await this.fileRepository.removeFiles(paths);
-  }
 }

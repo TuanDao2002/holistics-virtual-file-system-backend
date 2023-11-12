@@ -21,36 +21,41 @@ export class FolderRepository {
       throw new BadRequestException('Invalid folder name');
     }
 
-    const folders = await this.database
+    const folder = await this.database
       .selectFrom('folders')
       .selectAll()
       .where('name', '=', folderName)
       .where('path', parentPath === null ? 'is' : '=', parentPath)
-      .execute();
-    if (folders.length == 0) {
+      .executeTakeFirst();
+    if (!folder) {
       return null;
     }
 
-    return folders[0];
+    return folder;
   }
 
-  public async listFolder(path: string): Promise<any> {
+  public async listFolder(path: string | null): Promise<any> {
     return await this.database.transaction().execute(async (trx) => {
-      const existingFolder = await this.getFolder(path);
-      if (!existingFolder) {
-        throw new NotFoundException('Folder not exist');
+      let existingFolderId = null;
+      if (path != null) {
+        const existingFolder = await this.getFolder(path);
+        if (!existingFolder) {
+          throw new NotFoundException('Folder not exist');
+        }
+
+        existingFolderId = existingFolder.id;
       }
 
       const findSubFolders = trx
         .selectFrom('folders')
         .select(['name', 'created_at', 'size'])
-        .where('parent_id', '=', existingFolder.id)
+        .where('parent_id', !existingFolderId ? 'is' : '=', existingFolderId)
         .execute();
 
       const findFiles = trx
         .selectFrom('files')
         .select(['name', 'created_at', 'size'])
-        .where('parent_id', '=', existingFolder.id)
+        .where('parent_id', !existingFolderId ? 'is' : '=', existingFolderId)
         .execute();
 
       return (await Promise.all([findSubFolders, findFiles])).flat();
@@ -69,7 +74,8 @@ export class FolderRepository {
 
     return await this.database.transaction().execute(async (trx) => {
       const parentFolder = await this.getFolder(parentPath);
-      if (!parentFolder && parentPath) throw new NotFoundException('Parent folder not exist');
+      if (!parentFolder && parentPath)
+        throw new NotFoundException('Parent folder not exist');
 
       const existingFolder = await this.getFolder(path);
       if (existingFolder) {
@@ -97,5 +103,28 @@ export class FolderRepository {
       .where('id', '=', id)
       .set(updateData)
       .executeTakeFirst();
+  }
+
+  public async removeFolders(paths: string[]): Promise<void> {
+    let checkFolderPaths = [];
+    paths.forEach((path) => {
+      checkFolderPaths.push(this.getFolder(path));
+    });
+    const validFolders = await Promise.all(checkFolderPaths);
+    let folderIdsToDelete: number[] = [];
+    validFolders.forEach((folder) => {
+      if (folder != null) {
+        folderIdsToDelete.push(folder.id);
+      }
+    });
+
+    if (folderIdsToDelete.length == 0) return;
+
+    return await this.database.transaction().execute(async (trx) => {
+      await trx
+        .deleteFrom('folders')
+        .where('id', 'in', folderIdsToDelete)
+        .execute();
+    });
   }
 }

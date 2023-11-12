@@ -22,17 +22,17 @@ export class FileRepository {
       throw new BadRequestException(`Invalid file name ${fileName}`);
     }
 
-    const files = await this.database
+    const file = await this.database
       .selectFrom('files')
       .selectAll()
       .where('name', '=', fileName)
       .where('path', parentPath === null ? 'is' : '=', parentPath)
-      .execute();
-    if (files.length == 0) {
+      .executeTakeFirst();
+    if (!file) {
       return null;
     }
 
-    return files[0];
+    return file;
   }
 
   public async getFileContent(filePath: string = null): Promise<string> {
@@ -81,19 +81,36 @@ export class FileRepository {
     });
   }
 
-  public async removeFiles(paths: string[]) {
+  public async removeFiles(paths: string[]): Promise<void> {
     let checkFilePaths = [];
     paths.forEach((path) => {
       checkFilePaths.push(this.getFile(path));
     });
     const validFiles = await Promise.all(checkFilePaths);
-    let fileIdsToDelete = [];
+    let fileIdsToDelete: number[] = [];
     validFiles.forEach((file) => {
-      if (file != null) fileIdsToDelete.push(file.id);
+      if (file != null) {
+        fileIdsToDelete.push(file.id);
+      }
     });
 
+    if (fileIdsToDelete.length == 0) return;
+
     return await this.database.transaction().execute(async (trx) => {
-      trx.deleteFrom('files').where('id', 'in', fileIdsToDelete).execute();
+      await trx
+        .updateTable('folders as f')
+        .from('files')
+        .set((eb) => ({
+          size: eb('f.size', '-', eb.ref('files.size')),
+        }))
+        .where('files.id', 'in', fileIdsToDelete)
+        .whereRef('f.id', '=', 'files.parent_id')
+        .execute();
+
+      await trx
+        .deleteFrom('files')
+        .where('id', 'in', fileIdsToDelete)
+        .execute();
     });
   }
 }
