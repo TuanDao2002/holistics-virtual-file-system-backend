@@ -7,6 +7,7 @@ import { Database } from '../../../database/database';
 import { Constant } from '../../../common/constant';
 import extractPath from '../../../utility/extractPath';
 import { FolderRepository } from '../../folder/repository/folder.repository';
+import { UpdateFileDto } from '../dto/update-file.dto';
 
 @Injectable()
 export class FileRepository {
@@ -55,17 +56,25 @@ export class FileRepository {
     }
 
     return await this.database.transaction().execute(async (trx) => {
-      const parentFolder = await this.folderRepository.getFolder(parentPath);
-      if (!parentFolder) throw new NotFoundException('Parent folder not exist');
+      let parentFolder: any;
+      if (!parentPath) {
+        parentFolder = null;
+      } else {
+        parentFolder = await this.folderRepository.getFolder(parentPath);
+        if (!parentFolder)
+          throw new NotFoundException('Parent folder not exist');
+      }
 
       const existingFile = await this.getFile(path);
       if (existingFile) {
         throw new BadRequestException('File already exist');
       }
 
-      await this.folderRepository.updateFolder(parentFolder.id, {
-        size: parentFolder.size + data.length,
-      });
+      if (parentFolder) {
+        await this.folderRepository.updateFolder(parentFolder.id, {
+          size: parentFolder.size + data.length,
+        });
+      }
 
       return await trx
         .insertInto('files')
@@ -79,6 +88,25 @@ export class FileRepository {
         .returning(['id', 'name', 'path'])
         .executeTakeFirstOrThrow();
     });
+  }
+
+  public async updateFile(fileId: number, updateData: UpdateFileDto) {
+    return await this.database
+      .updateTable('files')
+      .where('id', '=', fileId)
+      .set(updateData)
+      .execute();
+  }
+
+  public async updateFilesInFolder(
+    folderId: number,
+    updateData: UpdateFileDto,
+  ) {
+    return await this.database
+      .updateTable('files')
+      .where('parent_id', '=', folderId)
+      .set(updateData)
+      .execute();
   }
 
   public async removeFiles(paths: string[]): Promise<void> {

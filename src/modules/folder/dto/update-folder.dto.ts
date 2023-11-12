@@ -11,7 +11,7 @@ export class UpdateFolderDto {
 
   @IsOptional()
   @IsNumber()
-  parentId?: number;
+  parent_id?: number;
 
   @IsOptional()
   @IsString()

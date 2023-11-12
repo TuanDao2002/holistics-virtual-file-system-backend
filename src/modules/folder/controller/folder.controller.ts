@@ -11,6 +11,7 @@ import {
 import { FolderService } from '../service/folder.service';
 import { CreateFolderDTO } from '../dto/create-folder.dto';
 import { Response } from 'express';
+import { MoveFileOrFolderDTO } from '../dto/move-file-folder.dto';
 
 @Controller()
 export class FolderController {
@@ -39,6 +40,16 @@ export class FolderController {
     @Res() res: Response,
   ): Promise<void> {
     await this.folderService.removeFilesOrFolders(paths);
+    res.json({ msg: 'Successfully complete' });
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('folder/move')
+  async moveFilesOrFolders(
+    @Body() body: MoveFileOrFolderDTO,
+    @Res() res: Response,
+  ): Promise<void> {
+    await this.folderService.moveFileOrFolder(body.path, body.folderPath);
     res.json({ msg: 'Successfully complete' });
   }
 }

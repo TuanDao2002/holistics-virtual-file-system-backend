@@ -73,9 +73,14 @@ export class FolderRepository {
     }
 
     return await this.database.transaction().execute(async (trx) => {
-      const parentFolder = await this.getFolder(parentPath);
-      if (!parentFolder && parentPath)
-        throw new NotFoundException('Parent folder not exist');
+      let parentFolder: any;
+      if (!parentPath) {
+        parentFolder = null;
+      } else {
+        parentFolder = await this.getFolder(parentPath);
+        if (!parentFolder)
+          throw new NotFoundException('Parent folder not exist');
+      }
 
       const existingFolder = await this.getFolder(path);
       if (existingFolder) {

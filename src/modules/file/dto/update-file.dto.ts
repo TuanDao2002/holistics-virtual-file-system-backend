@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsDate, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UpdateFileDto {
   @IsOptional()
@@ -15,9 +15,13 @@ export class UpdateFileDto {
 
   @IsOptional()
   @IsNumber()
-  parentId?: number;
+  parent_id?: number;
 
   @IsOptional()
   @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsDate()
+  created_at?: Date;
 }
