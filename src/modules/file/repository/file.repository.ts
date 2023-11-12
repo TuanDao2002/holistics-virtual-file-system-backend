@@ -19,7 +19,7 @@ export class FileRepository {
     const [fileName, parentPath] = extractPath(filePath);
 
     if (!fileName.match(Constant.NAME_REGEX)) {
-      throw new BadRequestException('Invalid file name');
+      throw new BadRequestException(`Invalid file name ${fileName}`);
     }
 
     const files = await this.database
@@ -56,16 +56,16 @@ export class FileRepository {
 
     return await this.database.transaction().execute(async (trx) => {
       const parentFolder = await this.folderRepository.getFolder(parentPath);
-      console.log(
-        '🚀 ~ file: file.repository.ts:60 ~ FileRepository ~ returnawaitthis.database.transaction ~ parentFolder:',
-        parentFolder,
-      );
       if (!parentFolder) throw new NotFoundException('Parent folder not exist');
 
       const existingFile = await this.getFile(path);
       if (existingFile) {
         throw new BadRequestException('File already exist');
       }
+
+      await this.folderRepository.updateFolder(parentFolder.id, {
+        size: parentFolder.size + data.length,
+      });
 
       return await trx
         .insertInto('files')
@@ -78,6 +78,22 @@ export class FileRepository {
         })
         .returning(['id', 'name', 'path'])
         .executeTakeFirstOrThrow();
+    });
+  }
+
+  public async removeFiles(paths: string[]) {
+    let checkFilePaths = [];
+    paths.forEach((path) => {
+      checkFilePaths.push(this.getFile(path));
+    });
+    const validFiles = await Promise.all(checkFilePaths);
+    let fileIdsToDelete = [];
+    validFiles.forEach((file) => {
+      if (file != null) fileIdsToDelete.push(file.id);
+    });
+
+    return await this.database.transaction().execute(async (trx) => {
+      trx.deleteFrom('files').where('id', 'in', fileIdsToDelete).execute();
     });
   }
 }

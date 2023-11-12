@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { FileRepository } from '../repository/file.repository';
-import { FileDTO } from '../dto/file.dto';
+import { CreateFileDTO } from '../dto/create-file.dto';
 
 @Injectable()
 export class FileService {
@@ -10,12 +10,16 @@ export class FileService {
     return await this.fileRepository.getFileContent(filePath);
   }
 
-  public async createFile(fileDTO: FileDTO): Promise<{
+  public async createFile(fileDTO: CreateFileDTO): Promise<{
     name: string;
     id: number;
     path: string;
   }> {
     const { filePath: path, data } = fileDTO;
     return await this.fileRepository.createFile(path, data);
+  }
+
+  public async removeFiles(paths: string[]): Promise<void> {
+    return await this.fileRepository.removeFiles(paths);
   }
 }

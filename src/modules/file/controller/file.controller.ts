@@ -8,7 +8,7 @@ import {
   Body,
 } from '@nestjs/common';
 import { FileService } from '../service/file.service';
-import { FileDTO } from '../dto/file.dto';
+import { CreateFileDTO } from '../dto/create-file.dto';
 
 @Controller()
 export class FileController {
@@ -22,7 +22,7 @@ export class FileController {
 
   @HttpCode(HttpStatus.OK)
   @Post('file')
-  async createFile(@Body() fileDTO: FileDTO): Promise<{
+  async createFile(@Body() fileDTO: CreateFileDTO): Promise<{
     name: string;
     id: number;
     path: string;
