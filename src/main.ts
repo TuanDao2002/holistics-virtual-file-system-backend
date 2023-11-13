@@ -11,6 +11,11 @@ async function bootstrap() {
     }),
   );
 
+  app.enableCors({
+    credentials: true,
+    origin: ['http://localhost:3000'],
+  });
+
   await app.listen(Constant.PORT);
   console.log(`Server listening on port: ${Constant.PORT}`);
 }
